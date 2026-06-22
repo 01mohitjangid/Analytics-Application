@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build:tracker": "esbuild src/tracker/tracker.ts --bundle --minify --target=es2017 --outfile=public/tracker.js --banner:js=\"/* Generated from src/tracker/tracker.ts — do not edit directly. */\"",
+    "build": "pnpm run build:tracker && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -19,6 +20,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
