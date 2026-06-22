@@ -65,15 +65,31 @@ curl http://localhost:3000/api/health
 
 ```
 app/
+  (store)/             # Storefront route group (the tracked site)
+    layout.tsx         # Loads the tracker + footer; light theme
+    page.tsx           # Homepage (hero + product grid)
+    product/[id]/      # Product detail page
+  dashboard/           # Analytics dashboard (not tracked); dark theme
+    layout.tsx         # Dashboard nav shell
+    page.tsx           # Sessions view (+ journey drawer)
+    heatmap/page.tsx   # Heatmap view (canvas)
   api/                 # Backend route handlers (the API)
+    events/route.ts    # POST ingest (single or batch) + CORS
+    sessions/route.ts  # GET sessions list with counts
+    sessions/[id]/     # GET ordered events for a session
+    heatmap/route.ts   # GET click points for a page
+    pages/route.ts     # GET distinct pages with click counts
     health/route.ts    # DB connectivity check
+  components/          # Nav, StoreHeader/Footer, ProductCard, Tracker, ...
 lib/
   mongodb.ts           # Cached MongoDB connection (hot-reload safe)
   events.ts            # Typed `events` collection + index setup
+  http.ts              # JSON/CORS helpers + event validation
+  products.ts          # Demo store product catalog
 types/
   analytics.ts         # Shared event/session/click types
 public/
-  tracker.js           # Client-side tracking script (added in step 3)
+  tracker.js           # Client-side tracking script
 ```
 
 ## Data model
@@ -95,11 +111,71 @@ Indexes: `{ sessionId, timestamp }` (session timelines) and `{ path, type }`
 
 ## API
 
-_Documented in step 2._
+All endpoints live under `app/api`. The ingestion endpoint allows cross-origin
+requests (CORS) so the tracker can be embedded on any site.
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| `POST` | `/api/events` | Ingest one event or a batch (`{events:[...]}`, a bare array, or a single object; max 100). Returns `{inserted}`. |
+| `GET`  | `/api/sessions` | All sessions with `eventCount`, `pageViews`, `clicks`, `firstSeen`, `lastSeen`, newest first. |
+| `GET`  | `/api/sessions/[id]` | Ordered event list (the user journey) for one session. `404` if unknown. |
+| `GET`  | `/api/heatmap?path=<path>` | Click coordinates (`{x,y,timestamp}`) for a page path. |
+| `GET`  | `/api/pages` | Distinct page paths that have clicks, with counts (powers the heatmap selector). |
+| `GET`  | `/api/health` | DB connectivity check. |
+
+Example ingest:
+
+```bash
+curl -X POST http://localhost:3000/api/events \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"abc","type":"click","url":"http://x/p","timestamp":"2026-01-01T00:00:00Z","x":10,"y":20}'
+```
+
+## Tracking script
+
+Add to any page:
+
+```html
+<script src="/tracker.js" data-endpoint="/api/events"></script>
+```
+
+It generates a `session_id` (localStorage, cookie fallback), tracks `page_view`
+on load and every `click` (document-relative coordinates), batches events, and
+flushes on a timer and on page hide via `sendBeacon`. Configure with
+`data-endpoint` (full URL) or `data-api-base` (origin to prefix `/api/events`).
+
+In this app the tracker is loaded on the storefront via `app/components/Tracker.tsx`,
+which also fires a `page_view` on client-side route changes (Next.js SPA
+navigation) so multi-page journeys are captured.
+
+## Storefront (the tracked site)
+
+A working demo store, **UA**, is the front door of the app and is what the
+tracker records:
+
+- `/` — homepage: hero + best-selling grid with Best Selling / New / Hot tabs.
+- `/product/[id]` — product detail page (size/color/add-to-cart, related items).
+
+Click around the store, then open the dashboard to see the sessions and heatmap
+populate. Product photos are loaded from Unsplash via plain `<img>` tags (no
+`next/image` remote config needed).
+
+## Dashboard (the analytics tool)
+
+Lives under `/dashboard` so it is separate from the tracked store and is **not**
+itself tracked:
+
+- `/dashboard` — **Sessions**: table of sessions with counts; "View journey"
+  opens a chronological timeline of that session's events.
+- `/dashboard/heatmap` — **Heatmap**: pick a page, see clicks rendered as
+  density blobs on a canvas.
 
 ## Assumptions & trade-offs
 
-- Single Next.js app serves both API and dashboard (see rationale above).
+- Single Next.js app serves the storefront, the API, and the dashboard. The
+  store is the tracked product; the dashboard is the analytics tool.
 - Sessions are anonymous, identified solely by a client-generated `sessionId`.
 - Click coordinates are document-relative (`pageX/pageY`); the heatmap renders
   against the page's own dimensions rather than a fixed viewport.
+- Product images are remote Unsplash URLs, so the store needs internet access to
+  render them.
