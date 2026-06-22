@@ -16,6 +16,8 @@ export interface TrackEventInput {
   /** Click coordinates relative to the document — present only for `click`. */
   x?: number;
   y?: number;
+  /** Layout viewport width at click time (for accurate heatmap rendering). */
+  vw?: number;
 }
 
 /** An event document as stored in MongoDB. */
@@ -29,6 +31,8 @@ export interface AnalyticsEvent {
   timestamp: Date;
   x?: number;
   y?: number;
+  /** Layout viewport width at click time. */
+  vw?: number;
   /** Server receive time — authoritative ordering fallback. */
   receivedAt: Date;
 }
@@ -47,5 +51,7 @@ export interface SessionSummary {
 export interface ClickPoint {
   x: number;
   y: number;
+  /** Layout viewport width at click time (defaults applied downstream). */
+  vw?: number;
   timestamp: string;
 }
