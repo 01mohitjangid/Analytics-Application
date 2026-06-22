@@ -2,10 +2,6 @@ import { getEventsCollection } from "@/lib/events";
 import { json } from "@/lib/http";
 import type { SessionSummary } from "@/types/analytics";
 
-/**
- * Lists all sessions with event counts, most recently active first.
- * GET /api/sessions
- */
 export async function GET() {
   try {
     const collection = await getEventsCollection();

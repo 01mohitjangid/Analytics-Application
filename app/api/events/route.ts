@@ -4,15 +4,10 @@ import type { AnalyticsEvent } from "@/types/analytics";
 
 const MAX_BATCH = 100;
 
-/** CORS preflight for cross-origin tracking. */
 export function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-/**
- * Ingests one event or a batch.
- * Body: a single event object, or `{ events: [...] }`, or a raw array.
- */
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -21,7 +16,6 @@ export async function POST(request: Request) {
     return json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Accept { events: [...] }, a bare array, or a single event object.
   const rawEvents: unknown[] = Array.isArray(body)
     ? body
     : Array.isArray((body as { events?: unknown[] })?.events)

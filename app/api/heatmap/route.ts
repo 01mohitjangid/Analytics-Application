@@ -4,10 +4,6 @@ import type { ClickPoint } from "@/types/analytics";
 
 const MAX_POINTS = 5000;
 
-/**
- * Returns click coordinates for a given page path, for heatmap rendering.
- * GET /api/heatmap?path=/demo
- */
 export async function GET(request: Request) {
   const path = new URL(request.url).searchParams.get("path");
   if (!path) {

@@ -1,6 +1,5 @@
 import type { AnalyticsEvent, EventType, TrackEventInput } from "@/types/analytics";
 
-/** CORS headers — the tracking script may post from any origin. */
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -8,7 +7,6 @@ export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Max-Age": "86400",
 };
 
-/** JSON response with CORS headers attached. */
 export function json(data: unknown, init?: ResponseInit): Response {
   return Response.json(data, {
     ...init,
@@ -22,10 +20,6 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-/**
- * Validates a raw client payload and normalizes it into a storable event.
- * Returns the document on success, or an error string describing the problem.
- */
 export function parseEvent(
   raw: unknown,
   receivedAt: Date,
@@ -45,15 +39,13 @@ export function parseEvent(
     return { error: "url is required" };
   }
 
-  // Derive the grouping path from the URL; fall back to the raw url.
   let path = input.url;
   try {
     path = new URL(input.url).pathname;
   } catch {
-    /* keep raw url as path */
+    path = input.url;
   }
 
-  // Client timestamp is trusted but validated; fall back to server time.
   const parsed = input.timestamp ? new Date(input.timestamp) : receivedAt;
   const timestamp = Number.isNaN(parsed.getTime()) ? receivedAt : parsed;
 

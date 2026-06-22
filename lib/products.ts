@@ -6,9 +6,7 @@ export interface Product {
   colorway: string;
   price: number;
   badge: string;
-  /** Hex swatches shown under the card. */
   colors: string[];
-  /** Verified Unsplash photo id. */
   image: string;
   category: "men" | "women";
   tabs: ProductTab[];
@@ -16,7 +14,6 @@ export interface Product {
 
 const IMG_BASE = "https://images.unsplash.com/";
 
-/** Build a sized Unsplash URL for a photo id. */
 export function img(id: string, w = 600): string {
   return `${IMG_BASE}${id}?w=${w}&q=80&auto=format&fit=crop`;
 }
