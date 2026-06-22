@@ -1,6 +1,5 @@
 import { getDb } from "@/lib/mongodb";
 
-/** Liveness + DB connectivity check: GET /api/health */
 export async function GET() {
   try {
     const db = await getDb();

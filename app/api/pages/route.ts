@@ -1,11 +1,6 @@
 import { getEventsCollection } from "@/lib/events";
 import { json } from "@/lib/http";
 
-/**
- * Lists distinct page paths that have click data, with click counts.
- * Powers the page selector in the heatmap view.
- * GET /api/pages
- */
 export async function GET() {
   try {
     const collection = await getEventsCollection();

@@ -1,10 +1,6 @@
 import { getEventsCollection } from "@/lib/events";
 import { json } from "@/lib/http";
 
-/**
- * Returns all events for a session, ordered chronologically (the user journey).
- * GET /api/sessions/[id]
- */
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/api/sessions/[id]">,
