@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const docs = await collection
       .find(
         { path, type: "click", x: { $exists: true }, y: { $exists: true } },
-        { projection: { _id: 0, x: 1, y: 1, timestamp: 1 } },
+        { projection: { _id: 0, x: 1, y: 1, vw: 1, timestamp: 1 } },
       )
       .limit(MAX_POINTS)
       .toArray();
@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const clicks: ClickPoint[] = docs.map((d) => ({
       x: d.x as number,
       y: d.y as number,
+      vw: d.vw,
       timestamp: d.timestamp.toISOString(),
     }));
 
