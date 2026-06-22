@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# User Analytics Application
 
-## Getting Started
+A small full-stack app that tracks user interactions (`page_view`, `click`) on a
+webpage and visualizes them in a dashboard — sessions (user journeys) and a
+click heatmap per page.
 
-First, run the development server:
+## Tech stack
+
+| Layer        | Choice                                                        |
+| ------------ | ------------------------------------------------------------- |
+| Frontend     | Next.js 16 (App Router) + React 19 + Tailwind CSS v4          |
+| Backend      | Next.js Route Handlers (`app/api/*`) — Node.js runtime        |
+| Database     | MongoDB (official `mongodb` driver)                           |
+| Tracking     | Vanilla JS script (`public/tracker.js`), no dependencies      |
+| Language     | TypeScript                                                    |
+
+### Why one Next.js app instead of a separate backend?
+
+The assignment allows Node.js for the backend and React/Next.js for the
+dashboard. Using Next.js Route Handlers as the backend keeps everything in a
+single deployable (one repo, one deploy target, shared TypeScript types between
+client and server) while still being plain server-side Node.js. The trade-off:
+the API is coupled to the Next.js server rather than independently scalable —
+acceptable at this scope.
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm
+- A MongoDB instance (local `mongod`, Docker, or MongoDB Atlas)
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 1. Install dependencies
+pnpm install
+
+# 2. Configure environment
+cp .env.example .env.local
+# then edit .env.local and set MONGODB_URI
+
+# 3. (local Mongo via Docker, optional)
+docker run -d -p 27017:27017 --name analytics-mongo mongo:7
+
+# 4. Run the dev server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Verify the database connection:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+curl http://localhost:3000/api/health
+# { "status": "ok", "db": "connected" }
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+| Variable               | Required | Description                                        |
+| ---------------------- | -------- | -------------------------------------------------- |
+| `MONGODB_URI`          | yes      | MongoDB connection string                          |
+| `MONGODB_DB`           | no       | Database name (default `user_analytics`)           |
+| `NEXT_PUBLIC_API_BASE` | no       | Base URL for the tracker; empty = same-origin      |
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/
+  api/                 # Backend route handlers (the API)
+    health/route.ts    # DB connectivity check
+lib/
+  mongodb.ts           # Cached MongoDB connection (hot-reload safe)
+  events.ts            # Typed `events` collection + index setup
+types/
+  analytics.ts         # Shared event/session/click types
+public/
+  tracker.js           # Client-side tracking script (added in step 3)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Data model
 
-## Deploy on Vercel
+Events are stored in a single `events` collection:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Field        | Type            | Notes                                         |
+| ------------ | --------------- | --------------------------------------------- |
+| `sessionId`  | string          | From client cookie/localStorage               |
+| `type`       | `page_view` \| `click` |                                        |
+| `url`        | string          | Full `location.href`                          |
+| `path`       | string          | `location.pathname` — grouping key for heatmap|
+| `timestamp`  | Date            | Client-reported event time                    |
+| `x`, `y`     | number          | Click coordinates (click events only)         |
+| `receivedAt` | Date            | Server receive time                           |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Indexes: `{ sessionId, timestamp }` (session timelines) and `{ path, type }`
+(per-page heatmap clicks).
+
+## API
+
+_Documented in step 2._
+
+## Assumptions & trade-offs
+
+- Single Next.js app serves both API and dashboard (see rationale above).
+- Sessions are anonymous, identified solely by a client-generated `sessionId`.
+- Click coordinates are document-relative (`pageX/pageY`); the heatmap renders
+  against the page's own dimensions rather than a fixed viewport.
