@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated tracker artifact (source is src/tracker/tracker.ts).
+    "public/tracker.js",
   ]),
 ]);
 
